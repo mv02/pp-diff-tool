@@ -4,6 +4,9 @@ class Node:
     def __init__(self, id: int, name: str, entrypoint: bool):
         self.id = id
         self.name = name
+        b = name.index("(")
+        a = name.rfind(".", 0, b) + 1
+        self.short_name = name[a:b] + "()"
         self.entrypoint = entrypoint
         self.children = set()
         self.ancestors = set()

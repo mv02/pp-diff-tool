@@ -46,6 +46,23 @@ def print_tree(node: Node, diff: set[Node]):
         print_tree(child, diff)
 
 
+def to_output(node: Node, subgraph: int):
+    """Generate 3d-force-graph data recursively."""
+    if node.visited:
+        return {"nodes": [], "links": []}
+
+    node.visited = True
+    node.children = {n for n in node.children if n in diff}
+
+    output = {"nodes": [{"id": node.id, "name": node.name, "shortName": node.short_name, "subgraph": subgraph}], "links": []}
+
+    for child in node.children:
+        output["links"].append({"source": node.id, "target": child.id})
+        output["nodes"] += to_output(child, subgraph)["nodes"]
+
+    return output
+
+
 # Parse command-line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('file1')
@@ -68,11 +85,14 @@ print(f"// The graphs differ in {len(diff)} nodes.")
 roots = {node for node in diff if not node.has_ancestors() or len(node.ancestors.intersection(diff)) == 0}
 roots = sorted(roots)
 
-# Generate the graph in DOT language
-print("digraph {")
+# Generate the graph data for 3d-force-graph
+output = {"nodes": [], "links": []}
+
 for i, node in enumerate(roots):
-    print(f"  subgraph cluster_{str(i)} " + "{")
-    print(f'    label="{i}";')
-    print_tree(node, diff)
-    print("  }")
-print("}")
+    tmp = to_output(node, i)
+    output["nodes"] += tmp["nodes"]
+    output["links"] += tmp["links"]
+
+with open("data.js", "w") as file:
+    file.write("const data = ")
+    json.dump(output, file)
